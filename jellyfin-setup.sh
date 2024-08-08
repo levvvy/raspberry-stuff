@@ -16,52 +16,50 @@ main() {
         read -p "Select (1-8): " opt
     }
 
-    progress() {
+    display_progress() {
         local step=$1 total_steps=$2 desc=$3 task_progress=$4 task_total=$5
         local width=60 spinner="/-\\|" spin_index=0 spin_delay=0.1
         local gradient_chars=("░" "▒" "▓")
         local progress=$((step * 100 / total_steps))
-        local progress_bar="" task_bar=""
-        local pb_len=$((width - 16)) tb_len=$((width - 10))
-
+        local pb_len=$((width - 16))
+        local tb_len=$((width - 10))
+        
         grad_char() { local pct=$1; echo "${gradient_chars[$((pct * (${#gradient_chars[@]} - 1) / 100))]}"; }
 
-        for i in $(seq 1 $pb_len); do
-            [ $i -le $((progress * pb_len / 100)) ] && progress_bar="${progress_bar}$(grad_char $progress)" || progress_bar="${progress_bar}░"
-        done
-
-        for i in $(seq 1 $tb_len); do
-            [ $i -le $((task_progress * tb_len / task_total)) ] && task_bar="${task_bar}$(grad_char $((task_progress * 100 / task_total)))" || task_bar="${task_bar}░"
-        done
-
+        local progress_bar=$(printf "%-${pb_len}s" "$(printf "%${pb_len}s" | sed "s/./$(grad_char $progress)/g")")
+        local task_bar=$(printf "%-${tb_len}s" "$(printf "%${tb_len}s" | sed "s/./$(grad_char $((task_progress * 100 / task_total)))/g")")
+        
         while [ $progress -lt 100 ]; do
-            printf "\rOverall Progress: [%s%s] %d%%  \nTask: %s\nTask Progress: [%s%s] %d%% %c" \
-                "$(printf "%-${pb_len}s" "$progress_bar" | sed 's/ /░/g')" "$(printf '%.0s ' $(seq ${#progress_bar} $pb_len))" "$progress" \
-                "$desc" "$(printf "%-${tb_len}s" "$task_bar" | sed 's/ /░/g')" "$(printf '%.0s ' $(seq ${#task_bar} $tb_len))" "$task_progress" \
-                "${spinner:spin_index:1}"
+            printf "\033[0;0HOverall Progress: [${progress_bar// /░}] %d%%\n" "$progress"
+            printf "Task: %s\n" "$desc"
+            printf "Task Progress: [${task_bar// /░}] %d%% %c" "$task_progress" "${spinner:spin_index:1}"
+            
             sleep $spin_delay
             spin_index=$(( (spin_index + 1) % ${#spinner} ))
+            printf "\033[A\033[A"
+            
             progress=$((progress + 1))
         done
-        printf "\rOverall Progress: [%s%s] %d%%  \nTask: %s\nTask Progress: [%s%s] %d%% Done!           \n" \
-            "$(printf "%-${pb_len}s" "$progress_bar" | sed 's/ /░/g')" "$(printf '%.0s ' $(seq ${#progress_bar} $pb_len))" "$progress" \
-            "$desc" "$(printf "%-${tb_len}s" "$task_bar" | sed 's/ /░/g')" "$(printf '%.0s ' $(seq ${#task_bar} $tb_len))" "$task_progress"
+
+        printf "\033[0;0HOverall Progress: [${progress_bar// /░}] %d%% Done!\n" "$progress"
+        printf "Task: %s\n" "$desc"
+        printf "Task Progress: [${task_bar// /░}] %d%% Done!\n" "$task_progress"
     }
 
     auto_install() {
         echo "Auto-installing all components..."
-        total_steps=4 step=1 task_total=4 task_step=1
+        local total_steps=4 step=1 task_total=4 task_step=1
 
-        progress $step $total_steps "Installing packages..." $task_step $task_total
+        display_progress $step $total_steps "Installing packages..." $task_step $task_total
         sudo apt-get update -y > /dev/null
         sudo apt-get install --no-install-recommends xserver-xorg xinit openbox flatpak python3-xdg -y > /dev/null
         task_step=$((task_step + 1)) step=$((step + 1))
 
-        progress $step $total_steps "Installing Jellyfin Player..." $task_step $task_total
+        display_progress $step $total_steps "Installing Jellyfin Player..." $task_step $task_total
         flatpak install flathub com.github.iwalton3.jellyfin-media-player -y > /dev/null
         task_step=$((task_step + 1)) step=$((step + 1))
 
-        progress $step $total_steps "Creating systemd service..." $task_step $task_total
+        display_progress $step $total_steps "Creating systemd service..." $task_step $task_total
         sudo bash -c 'cat <<EOF > /usr/local/bin/start-jellyfin-x.sh
 #!/bin/bash
 export DISPLAY=:0
@@ -86,7 +84,7 @@ EOF'
         sudo systemctl enable jellyfin-player.service > /dev/null
         task_step=$((task_step + 1)) step=$((step + 1))
 
-        progress $step $total_steps "Enabling auto-login..." $task_step $task_total
+        display_progress $step $total_steps "Enabling auto-login..." $task_step $task_total
         sudo raspi-config nonint do_boot_behaviour B2 > /dev/null
 
         echo "All components installed!"
@@ -128,7 +126,7 @@ sleep 2
 openbox-session &
 sudo -u '$USER' flatpak run com.github.iwalton3.jellyfin-media-player
 EOF'
-            sudo bash -c 'cat <<EOF > /etc/systemd/system/jellyfin-player.service
+        sudo bash -c 'cat <<EOF > /etc/systemd/system/jellyfin-player.service
 [Unit]
 Description=Autostart Jellyfin Player on boot
 After=network.target
@@ -141,7 +139,7 @@ RestartSec=10
 [Install]
 WantedBy=multi-user.target
 EOF'
-            sudo systemctl enable jellyfin-player.service > /dev/null ;;
+        sudo systemctl enable jellyfin-player.service > /dev/null ;;
             5) sudo raspi-config nonint do_boot_behaviour B2 > /dev/null ;;
             6) manual_launch ;;
             7) reboot_system ;;

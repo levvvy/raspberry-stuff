@@ -20,30 +20,32 @@ main() {
         local step=$1 total_steps=$2 desc=$3 task_progress=$4 task_total=$5
         local width=60 spinner="/-\\|" spin_index=0 spin_delay=0.1
         local gradient_chars=("░" "▒" "▓")
-        local progress=$((step * 100 / total_steps))
+        local task_progress_percent=$((step * 100 / total_steps))
         local pb_len=$((width - 16))
         local tb_len=$((width - 10))
         
         grad_char() { local pct=$1; echo "${gradient_chars[$((pct * (${#gradient_chars[@]} - 1) / 100))]}"; }
 
-        local progress_bar=$(printf "%-${pb_len}s" "$(printf "%${pb_len}s" | sed "s/./$(grad_char $progress)/g")")
-        local task_bar=$(printf "%-${tb_len}s" "$(printf "%${tb_len}s" | sed "s/./$(grad_char $((task_progress * 100 / task_total)))/g")")
+        local overall_progress_bar=$(printf "%-${pb_len}s" "$(printf "%${pb_len}s" | sed "s/./$(grad_char $task_progress_percent)/g")")
+        local task_progress_bar=$(printf "%-${tb_len}s" "$(printf "%${tb_len}s" | sed "s/./$(grad_char $((task_progress * 100 / task_total)))/g")")
         
-        while [ $progress -lt 100 ]; do
-            printf "\033[0;0HOverall Progress: [${progress_bar// /░}] %d%%\n" "$progress"
-            printf "Task: %s\n" "$desc"
-            printf "Task Progress: [${task_bar// /░}] %d%% %c" "$task_progress" "${spinner:spin_index:1}"
+        while [ $task_progress_percent -lt 100 ]; do
+            clear
+            printf "Overall Progress: [${overall_progress_bar// /░}] %d%%\n" "$task_progress_percent"
+            printf "Current Step: %s\n" "$desc"
+            printf "Step Progress: [${task_progress_bar// /░}] %d%% %c" "$task_progress" "${spinner:spin_index:1}"
             
             sleep $spin_delay
             spin_index=$(( (spin_index + 1) % ${#spinner} ))
             printf "\033[A\033[A"
             
-            progress=$((progress + 1))
+            task_progress_percent=$((task_progress_percent + 1))
         done
 
-        printf "\033[0;0HOverall Progress: [${progress_bar// /░}] %d%% Done!\n" "$progress"
-        printf "Task: %s\n" "$desc"
-        printf "Task Progress: [${task_bar// /░}] %d%% Done!\n" "$task_progress"
+        clear
+        printf "Overall Progress: [${overall_progress_bar// /░}] %d%% Done!\n" "$task_progress_percent"
+        printf "Current Step: %s\n" "$desc"
+        printf "Step Progress: [${task_progress_bar// /░}] %d%% Done!\n" "$task_progress"
     }
 
     auto_install() {
@@ -116,9 +118,9 @@ EOF'
         menu
         case $opt in
             1) auto_install ;;
-            2) sudo apt-get update -y > /dev/null; sudo apt-get install --no-install-recommends xserver-xorg xinit openbox flatpak python3-xdg -y > /dev/null ;;
-            3) flatpak install flathub com.github.iwalton3.jellyfin-media-player -y > /dev/null ;;
-            4) sudo bash -c 'cat <<EOF > /usr/local/bin/start-jellyfin-x.sh
+            2) clear; sudo apt-get update -y > /dev/null; sudo apt-get install --no-install-recommends xserver-xorg xinit openbox flatpak python3-xdg -y > /dev/null ;;
+            3) clear; flatpak install flathub com.github.iwalton3.jellyfin-media-player -y > /dev/null ;;
+            4) clear; sudo bash -c 'cat <<EOF > /usr/local/bin/start-jellyfin-x.sh
 #!/bin/bash
 export DISPLAY=:0
 Xorg :0 &
@@ -140,11 +142,11 @@ RestartSec=10
 WantedBy=multi-user.target
 EOF'
         sudo systemctl enable jellyfin-player.service > /dev/null ;;
-            5) sudo raspi-config nonint do_boot_behaviour B2 > /dev/null ;;
+            5) clear; sudo raspi-config nonint do_boot_behaviour B2 > /dev/null ;;
             6) manual_launch ;;
             7) reboot_system ;;
             8) exit ;;
-            *) echo "Invalid option." ;;
+            *) clear; echo "Invalid option." ;;
         esac
     done
 }

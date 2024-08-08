@@ -12,7 +12,7 @@ main() {
         echo -e "6. Manual Launch on HDMI Port"
         echo -e "7. Reboot System"
         echo -e "8. Exit"
-        echo ""
+        echo -e ""
         read -p "Select (1-8): " opt
     }
 
@@ -35,17 +35,28 @@ main() {
         done
 
         while [ $progress -lt 100 ]; do
-            printf "\rTask: [%s%s] %d%%  |  Overall: [%s%s] %d%% %c" "$task_bar" "$(printf '%.0s ' $(seq ${#task_bar} $tb_len))" "$task_progress" "$progress_bar" "$(printf '%.0s ' $(seq ${#progress_bar} $pb_len))" "$progress" "${spinner:spin_index:1}"
+            printf "\nOverall Progress:\n"
+            printf "%s\n" "$(printf "%-${pb_len}s" "$progress_bar" | sed 's/ /░/g')"
+            printf "Task: %s\n" "$desc"
+            printf "Task Progress:\n"
+            printf "%s\n" "$(printf "%-${tb_len}s" "$task_bar" | sed 's/ /░/g')"
+            printf "%s" "${spinner:spin_index:1}"
             sleep $spin_delay
             spin_index=$(( (spin_index + 1) % ${#spinner} ))
             progress=$((progress + 1))
         done
-        printf "\rTask: [%s%s] %d%%  |  Overall: [%s%s] %d%% Done!           \n" "$task_bar" "$(printf '%.0s ' $(seq ${#task_bar} $tb_len))" "$task_progress" "$progress_bar" "$(printf '%.0s ' $(seq ${#progress_bar} $pb_len))" "$progress"
+        printf "\nOverall Progress:\n"
+        printf "%s\n" "$(printf "%-${pb_len}s" "$progress_bar" | sed 's/ /░/g')"
+        printf "Task: %s\n" "$desc"
+        printf "Task Progress:\n"
+        printf "%s\n" "$(printf "%-${tb_len}s" "$task_bar" | sed 's/ /░/g')"
+        printf "Done!\n"
     }
 
     auto_install() {
         echo "Auto-installing all components..."
         total_steps=4 step=1 task_total=4 task_step=1
+
         progress $step $total_steps "Installing packages..." $task_step $task_total
         sudo apt-get update -y > /dev/null
         sudo apt-get install --no-install-recommends xserver-xorg xinit openbox flatpak python3-xdg -y > /dev/null

@@ -35,22 +35,17 @@ main() {
         done
 
         while [ $progress -lt 100 ]; do
-            printf "\nOverall Progress:\n"
-            printf "%s\n" "$(printf "%-${pb_len}s" "$progress_bar" | sed 's/ /░/g')"
-            printf "Task: %s\n" "$desc"
-            printf "Task Progress:\n"
-            printf "%s\n" "$(printf "%-${tb_len}s" "$task_bar" | sed 's/ /░/g')"
-            printf "%s" "${spinner:spin_index:1}"
+            printf "\rOverall Progress: [%s%s] %d%%  \nTask: %s\nTask Progress: [%s%s] %d%% %c" \
+                "$(printf "%-${pb_len}s" "$progress_bar" | sed 's/ /░/g')" "$(printf '%.0s ' $(seq ${#progress_bar} $pb_len))" "$progress" \
+                "$desc" "$(printf "%-${tb_len}s" "$task_bar" | sed 's/ /░/g')" "$(printf '%.0s ' $(seq ${#task_bar} $tb_len))" "$task_progress" \
+                "${spinner:spin_index:1}"
             sleep $spin_delay
             spin_index=$(( (spin_index + 1) % ${#spinner} ))
             progress=$((progress + 1))
         done
-        printf "\nOverall Progress:\n"
-        printf "%s\n" "$(printf "%-${pb_len}s" "$progress_bar" | sed 's/ /░/g')"
-        printf "Task: %s\n" "$desc"
-        printf "Task Progress:\n"
-        printf "%s\n" "$(printf "%-${tb_len}s" "$task_bar" | sed 's/ /░/g')"
-        printf "Done!\n"
+        printf "\rOverall Progress: [%s%s] %d%%  \nTask: %s\nTask Progress: [%s%s] %d%% Done!           \n" \
+            "$(printf "%-${pb_len}s" "$progress_bar" | sed 's/ /░/g')" "$(printf '%.0s ' $(seq ${#progress_bar} $pb_len))" "$progress" \
+            "$desc" "$(printf "%-${tb_len}s" "$task_bar" | sed 's/ /░/g')" "$(printf '%.0s ' $(seq ${#task_bar} $tb_len))" "$task_progress"
     }
 
     auto_install() {
